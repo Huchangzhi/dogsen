@@ -73,14 +73,14 @@ jobs:
         python train_github_actions.py
 
     - name: Upload Red Model Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: red-model
         path: red_model.pth
       if: success()
 
     - name: Upload Black Model Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: black-model
         path: black_model.pth

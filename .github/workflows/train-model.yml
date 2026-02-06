@@ -1,0 +1,87 @@
+name: Train Chinese Chess AI Model
+
+on:
+  workflow_dispatch:
+    inputs:
+      red_model_url:
+        description: 'URL for Red Player Model (optional, uses random if not provided)'
+        required: false
+        default: ''
+      black_model_url:
+        description: 'URL for Black Player Model (optional, uses random if not provided)'
+        required: false
+        default: ''
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        default: '5'
+      games_per_epoch:
+        description: 'Number of games per epoch'
+        required: false
+        default: '3'
+      steps_per_epoch:
+        description: 'Number of training steps per epoch'
+        required: false
+        default: '20'
+      max_time_minutes:
+        description: 'Maximum training time in minutes'
+        required: false
+        default: '30'
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+
+    - name: Set model URLs as environment variables
+      run: |
+        if [ -n "${{ inputs.red_model_url }}" ]; then
+          echo "RED_MODEL_URL=${{ inputs.red_model_url }}" >> $GITHUB_ENV
+        fi
+        if [ -n "${{ inputs.black_model_url }}" ]; then
+          echo "BLACK_MODEL_URL=${{ inputs.black_model_url }}" >> $GITHUB_ENV
+        fi
+
+    - name: Download Models
+      run: |
+        chmod +x download_models.sh
+        ./download_models.sh
+
+    - name: Set environment variables
+      run: |
+        echo "EPOCHS=${{ inputs.epochs }}" >> $GITHUB_ENV
+        echo "GAMES_PER_EPOCH=${{ inputs.games_per_epoch }}" >> $GITHUB_ENV
+        echo "STEPS_PER_EPOCH=${{ inputs.steps_per_epoch }}" >> $GITHUB_ENV
+        echo "MAX_TIME_MINUTES=${{ inputs.max_time_minutes }}" >> $GITHUB_ENV
+        echo "RED_MODEL_PATH=red_model.pth" >> $GITHUB_ENV
+        echo "BLACK_MODEL_PATH=black_model.pth" >> $GITHUB_ENV
+
+    - name: Train Model
+      run: |
+        python train_github_actions.py
+
+    - name: Upload Red Model Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: red-model
+        path: red_model.pth
+      if: success()
+
+    - name: Upload Black Model Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: black-model
+        path: black_model.pth
+      if: success()
